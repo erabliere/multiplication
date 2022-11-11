@@ -30,7 +30,7 @@ function _run(tables = []/*, stop = _temps, options = { hasard: false }*/) {
   return tables.reduce((donnees, table) => {
 
     //return table.ops.reduce()
-    const question = `${op.} X ${a} =`
+    const question = `${op.op_1} X ${op.op_2} =`
     const questionReponse = `${question} ${valeurVraie}`
 
     const debut = new Date()
