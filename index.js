@@ -155,14 +155,17 @@ async function afficherMode(mode) {
   if (tempsABattre) {
     if (statistiques['résultats'].moyenne_globale < tempsABattre) {
       after = () => {
-        chalkAnimation.default.rainbow('RECORD BATTU!!')
-        chalkAnimation.default.rainbow(`${moyenneFormatee} < ${tempsABattre} !!`)
+        ligneVide(2)
+        chalkAnimation.default.rainbow(`RECORD BATTU!!  -->>  ${moyenneFormatee} < ${tempsABattre} !!`)
+        return true
       }
     } else {
       after = () => {
+        ligneVide(2)
         afficher(`Meilleure chance la prochaine fois...`)
         afficher("Le record n'a pas été battu")
         afficher(`${moyenneFormatee} >= ${tempsABattre} :-(`)
+        return true
       }
     }
   }

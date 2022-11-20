@@ -14,12 +14,12 @@ module.exports = {
           afficher("ERREUR: Les données n'ont pu être enregistrées dans le chiffrier", 'rouge')
           afficher(`Message d'erreur: ${response.data.message}`, 'rouge')
         }
-        after()
+        return after()
       })
       .catch(function(error) {
         afficher("ERREUR: Les données n'ont pu être enregistrées dans le chiffrier", 'rouge')
         afficher(`Message d'erreur: ${error}`, 'rouge')
-        after()
+        return after()
       })
   },
   async demanderStatistiques(nom, table) {
