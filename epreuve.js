@@ -1,50 +1,53 @@
-//const { enregistrerDonnee } = require('./statistiques.js')
+
 const { demander, afficher, ligneVide, trait, delai } = require('./affichage.js')
-//const random = require('lodash.random')
 
-const now = (new Date()).getTime()
+const { Operation } = require('./tables.js')
+const couleurs = require('./couleurs.js')
+const { formatterTemps } = require('./nombres.js')
 
-function _buildOps(tablesRangeStart = 2, tablesRangeEnd = 12, opsRangeStart = 1, opsRangeEnd = 12) {
-  const ops = [...Array(opsRangeEnd - opsRangeStart + 1).keys()].map(x => x + opsRangeStart)
-  const tables = [...Array(tablesRangeEnd - tablesRangeStart + 1).keys()].map(x => x + tablesRangeStart)
-  return tables.map(table => ({ table: table, ops: ops.map(op => ({ op_1: table, op_2: op })) }))
-}
-
-function _finDeListe() {
-  return () => true
-}
-
-function _temps(data = { duree: 2 }, condition = data => now + data.duree * 60 * 1000 <= now) {
-  return () => _stop(data, condition)
-}
-
-function _stop(data = {}, condition = () => false) {
-  return condition(data)
-}
-
-function _run(tables = []/*, stop = _temps, options = { hasard: false }*/) {
-
-  /*while (!stop()) {
-
-  }*/
-  return tables.reduce((donnees, table) => {
-
-    //return table.ops.reduce()
-    const question = `${op.op_1} X ${op.op_2} =`
-    const questionReponse = `${question} ${valeurVraie}`
-
-    const debut = new Date()
-    reponse = demander(question, true)
-    const fin = new Date()
-    const temps = (fin - debut) / 1000
-    return donnees
-  }, {})
-
+function _construireChaine(operation, avecReponse = 'true') {
+  return `${operation.table()} X ${operation.facteur()} =` + (avecReponse ? ` ${operation.produit()}` : '')
 }
 
 module.exports = {
-  sequence: (table) => _run(_buildOps(table, table, 1, 12)),
-  hasard: (tables, ops, duree) => _run(tables, _temps({ duree: duree }), { hasard: true }),
-  reprise: (tables, ops) => _run(tables, ops, _finDeListe),
-  ops: (s_t, e_t, s_o, e_o) => _buildOps(s_t, e_t, s_o, e_o)
+  epreuve(tables, mode = Operation.MODES.ORDONNE, nombreRepetitions = 1, condition = () => true) {
+    let operation, compteurRepetitions = 0, compteurSelection = 0, moyenne, duree
+    while ((operation = tables.operationSuivante()) && condition(compteurSelection)) {
+      for (compteurRepetitions; compteurRepetitions < nombreRepetitions; compteurRepetitions++) {
+        const question = `${operation.table()} X ${operation.facteur()} =`
+        const questionReponse = `${question} ${operation.produit()}`
+
+        trait(questionReponse.length)
+
+        operation.demarrerChrono()
+        reponse = demander(question, true)
+        operation.arreterChrono(reponse, mode)
+
+        if (operation.succes()) {
+          afficher(questionReponse, 'vert')
+        } else {
+          afficher(questionReponse, 'rouge')
+        }
+
+        duree = operation.duree()
+        moyenne = tables.moyenneDuree(mode)
+
+        tempsFormatte = couleurs.gris(formatterTemps(duree) + ' s.')
+
+        if (moyenne > duree) {
+          afficher(`${couleurs.vert('▼')}${tempsFormatte}`)
+        } else if (moyenne < duree) {
+          afficher(`${couleurs.rouge('▲')}${tempsFormatte}`)
+        } else {
+          afficher(tempsFormatte)
+        }
+        trait(questionReponse.length)
+      }
+      compteurRepetitions = 0
+      compteurSelection++
+    }
+  },
+  afficherOperationComplete(operation){
+    afficher(_construireChaine(operation))
+  }
 }

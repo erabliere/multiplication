@@ -1,152 +1,166 @@
 const couleurs = require('./couleurs.js')
 const { demander, afficher, ligneVide, trait, delai } = require('./affichage.js')
 const { formatter } = require('./nombres.js')
-const { enregistrerDonnee, produireStatistiques } = require('./statistiques.js')
 const { demanderStatistiques, envoyerDonnees } = require('./API.js')
-const random = require('lodash.random')
+const { epreuve, afficherOperationComplete } = require('./epreuve.js')
 
-const tables = require('./tables.js');
+const { Tables, Operation } = require('./tables.js')
+const tables = new Tables();
 
-//const { sequence } = require('./epreuve.js');
 
-(async function() {
+async function afficherMode(mode) {
+  ligneVide()
+  afficher(`MODE: ${mode.toUpperCase()}`, 'magenta')
+  await delai(1, "Début de l'épreuve dans ~s~ seconde(s)")
+  ligneVide()
+}
+
+(async function () {
+
+  const  chalkAnimation  = await import('chalk-animation');
 
   const table = demander('Quelle table? (aucune réponse: toutes les tables)', true)
-  const dureeEpreuveMinutes = demander("Durée de l'épreuve (minutes)?", true)
+  const dureeEpreuveHasardMinutes = demander("Durée de l'épreuve (minutes)?", true)
   const nom = demander('Ton nom?')
 
-  let tempsABattre
-  let numTable
-  let nombreDeQuestions = 0
-  let sommeDuTemps = 0
-  let moyenne = 0
 
-  const lesDonnees = {}
+  const dureeEpreuveHasardMillisecondes = dureeEpreuveHasardMinutes * 60 * 1000
+  const debutEpreuve = new Date()
+  let finEpreuve, tempsABattre
 
-  /*const lesDonnees = {
-    sequence: undefined,
-    hasard: undefined,
-    reprise: undefined
-  }*/
+  //Statistiques
+  const statistiques = {}
+
+  statistiques['table'] = table
+  statistiques['durée_épreuve'] = dureeEpreuveHasardMinutes
+  statistiques['date_épreuve'] = debutEpreuve.toISOString()
+  statistiques['nom'] = nom
+  statistiques['brut'] = {}
 
   try {
     tempsABattre = await demanderStatistiques(nom, table)
   } catch (e) { }
 
   if (tempsABattre) {
-    afficher(`Temps à battre pour la table de [${couleurs.magenta(table === 0 ? 'toutes' : table)}]: ${couleurs.bleu(tempsABattre)} secondes`)
-  }
-
-  ligneVide(2)
-  await delai(10, "Début de l'épreuve dans ~s~ seconde(s)")
-  //sequence(table)
-  ligneVide()
-
-  /*if (table) {
-    ligneVide(2)
-    await delai(10, "Début de l'épreuve EN SÉQUENCE dans ~s~ seconde(s)")
-    sequence(table)
-    ligneVide()
-  }*/
-
-  /*return
- 
-  ligneVide(2)
-  await delai(10, "Début de l'épreuve AU HASARD dans ~s~ seconde(s)")
-  ligneVide()
- 
-  ligneVide(2)
-  await delai(10, "Début de l'épreuve EN REPRISE dans ~s~ seconde(s)")
-  ligneVide()*/
-
-  const dureeEpreuveMillisecondes = dureeEpreuveMinutes * 60 * 1000
-  const debutEpreuve = new Date()
-  const finEpreuve = debutEpreuve.getTime() + dureeEpreuveMillisecondes
-
-
-  const statistiques = {}
-
-  statistiques['table'] = table
-  statistiques['durée_épreuve'] = dureeEpreuveMinutes
-  statistiques['date_épreuve'] = debutEpreuve.toISOString()
-  statistiques['nom'] = nom
-  statistiques['brut'] = {}
-
-  while ((new Date()).getTime() <= finEpreuve) {
-    numTable = table ? table - 2 : random(tables.length - 1)
-    const hasard = random(tables[numTable].length - 1)
-    const a = tables[numTable][hasard].a
-    const b = tables[numTable][hasard].b
-    const valeurVraie = tables[numTable][hasard].a_X_b
-    const question = `${b} X ${a} =`
-    const questionReponse = `${question} ${valeurVraie}`
-    let reponse
-    let debut, fin, temps, tempsFormatte
-
-    trait(questionReponse.length)
-
-    debut = new Date()
-    reponse = demander(question, true)
-    fin = new Date()
-
-    temps = (fin - debut) / 1000
-
-    if (valeurVraie !== reponse) {
-      temps = 5 + temps //Pénalité de 5 secondes
-    }
-
-    enregistrerDonnee(a, b, temps, valeurVraie === reponse, lesDonnees)
-
-    sommeDuTemps = sommeDuTemps + temps
-    nombreDeQuestions++
-    moyenne = sommeDuTemps / nombreDeQuestions
-
-    tempsFormatte = couleurs.gris(formatter(temps) + ' s.')
-
-    if (a * b === reponse) {
-      afficher(questionReponse, 'vert')
-    } else {
-      afficher(questionReponse, 'rouge')
-    }
-    trait(questionReponse.length)
-
-    if (tempsABattre) {
-      if (moyenne < tempsABattre) {
-        afficher(`${couleurs.vert('▼')}${tempsFormatte}`)
-      } else if (moyenne > tempsABattre) {
-        afficher(`${couleurs.rouge('▲')}${tempsFormatte}`)
-      } else {
-        afficher(tempsFormatte)
-      }
-    } else {
-      if (moyenne > temps) {
-        afficher(`${couleurs.vert('▼')}${tempsFormatte}`)
-      } else if (moyenne < temps) {
-        afficher(`${couleurs.rouge('▲')}${tempsFormatte}`)
-      } else {
-        afficher(tempsFormatte)
-      }
-    }
-
-    ligneVide(2)
-
+    afficher(`Temps à battre pour la table de [${couleurs.magenta(table === 0 ? 'toutes les tables' : table)}]: ${couleurs.bleu(tempsABattre)} secondes (mode HASARD)`)
   }
 
 
+
+
+  if (table) {
+    //Ordonné, une seule fois
+    await afficherMode('ordonné')
+    tables.modeOrdonne()
+    tables.selectionnerOperationsDeLaTable(table)
+    epreuve(tables)
+
+
+    //Au hasard, limitée dans le temps
+    await afficherMode('hasard')
+    tables.modeHasard()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 1
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+
+    //Quinze répétitions, mode ordonné
+    //Opérations sélectionnées: toutes celles dont la moyenne est supérieure
+    //à la moyenne générale pour la table
+    await afficherMode('reprise')
+    tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees(table)
+    tables.modeOrdonne()
+    const nombreOperationsSelectionnes = tables.nombreOperationsSelectionnes()
+    repetition = 15
+    condition = compteurSelection => compteurSelection < nombreOperationsSelectionnes
+    epreuve(tables, Operation.MODES.ORDONNE, repetition, condition)
+
+    //Au hasard, limitée dans le temps
+    await afficherMode('hasard')
+    tables.selectionnerOperationsDeLaTable(table)
+    tables.modeHasard()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 1
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+
+    //Pour les statistiques
+    tables.selectionnerOperationsDeLaTable(table)
+
+  } else {
+    //Au hasard, toutes les tables
+    await afficherMode('hasard, toutes les tables')
+    tables.selectionnerToutesLesOperations()
+    tables.modeHasard()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 1
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+
+    //Ordonné, tables à moyenne supérieure à la moyenne générale
+    await afficherMode('reprise, opérations à moyenne plus élevée ou erronées')
+    tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees()
+    tables.modeOrdonne()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 4
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+
+    //Au hasard, toutes les tables
+    await afficherMode('hasard, toutes les tables')
+    tables.selectionnerToutesLesOperations()
+    tables.modeHasard()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 1
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+
+    //Ordonné, tables à moyenne supérieure à la moyenne générale
+    await afficherMode('reprise, opérations à moyenne plus élevée ou erronées')
+    tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees()
+    tables.modeOrdonne()
+    finEpreuve = (new Date()).getTime() + dureeEpreuveHasardMillisecondes
+    condition = () => new Date().getTime() < finEpreuve
+    repetition = 4
+    epreuve(tables, Operation.MODES.HASARD, repetition, condition)
+    //Pour les statistiques
+    tables.selectionnerToutesLesOperations()
+  }
+
+  statistiques['résultats'] = tables.resumeStatistique()
+
+/*   console.log(statistiques)
+  console.log(' ')
+  statistiques['brut'] = tables.statistiquesBrutes()
+  console.log(JSON.stringify(statistiques.brut, null, 2)) */
+  ligneVide()
   trait(38, '+')
   afficher('STATISTIQUES', 'magenta', 38)
   trait(38, '+')
   ligneVide()
-  afficher('Les statistiques par opération vont de', 'gris')
-  afficher('la moyenne de temps la meilleure à', 'gris')
-  afficher('la moyenne de temps la plus lente', 'gris')
+
+  tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees(table)
+
+
+  const moyenneFormatee = formatter(statistiques['résultats'].moyenne_globale)
+  afficher(`Moyenne: ${moyenneFormatee} s.`)
+  afficher(`Opérations à revoir:`)
+  while (operation = tables.operationSuivante()) {
+    afficherOperationComplete(operation)
+  }
+
   ligneVide()
+  
+  if (tempsABattre && statistiques['résultats'].moyenne_globale * 1 < tempsABattre * 1) {
+    chalkAnimation.default.rainbow('RECORD BATTU!!')
+    chalkAnimation.default.rainbow(`${moyenneFormatee} < ${tempsABattre} !!`)
+  } else {
+    afficher(`Meilleure chance la prochaine fois...`)
+    afficher("Le record n'a pas été battu")
+    afficher(`${moyenneFormatee} >= ${tempsABattre} :-(`)
+  }
 
-  statistiques['brut'] = lesDonnees
-
-  statistiques['résultats'] = produireStatistiques(lesDonnees, debutEpreuve, new Date())
-
-  afficher(JSON.stringify(statistiques['résultats'], null, 2))
+  ligneVide(2)
 
   envoyerDonnees(statistiques)
 

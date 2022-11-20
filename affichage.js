@@ -54,6 +54,7 @@ module.exports = {
     return new Promise(resolve => printMessage(resolve));
   },
   afficher(message, couleur = 'blanc', longueurLigne = 0) {
+    message = message + ''
     message = couleur === 'blanc' ? message : couleurs[couleur](message)
     _afficher(_justifier(message, longueurLigne))
   },
@@ -62,8 +63,5 @@ module.exports = {
   },
   trait(nombreDeCaracteres = 8, caractere = '-', couleur = 'blanc') {
     _afficher(_trait(nombreDeCaracteres, caractere, couleur))
-  },
-  aUnCodeDeCouleur(texte) {
-    return _aUnCodeDeCouleur(texte)
   }
 }
