@@ -11,13 +11,13 @@ const tables = new Tables();
 async function afficherMode(mode) {
   ligneVide()
   afficher(`MODE: ${mode.toUpperCase()}`, 'magenta')
-  await delai(1, "Début de l'épreuve dans ~s~ seconde(s)")
+  await delai(10, "Début de l'épreuve dans ~s~ seconde(s)")
   ligneVide()
 }
 
 (async function () {
 
-  const  chalkAnimation  = await import('chalk-animation');
+  const chalkAnimation = await import('chalk-animation');
 
   const table = demander('Quelle table? (aucune réponse: toutes les tables)', true)
   const dureeEpreuveHasardMinutes = demander("Durée de l'épreuve (minutes)?", true)
@@ -129,39 +129,46 @@ async function afficherMode(mode) {
 
   statistiques['résultats'] = tables.resumeStatistique()
 
-/*   console.log(statistiques)
-  console.log(' ')
-  statistiques['brut'] = tables.statistiquesBrutes()
-  console.log(JSON.stringify(statistiques.brut, null, 2)) */
+  /*   console.log(statistiques)
+    console.log(' ')
+    statistiques['brut'] = tables.statistiquesBrutes()
+    console.log(JSON.stringify(statistiques.brut, null, 2)) */
   ligneVide()
   trait(38, '+')
   afficher('STATISTIQUES', 'magenta', 38)
   trait(38, '+')
   ligneVide()
 
-  tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees(table)
-
 
   const moyenneFormatee = formatter(statistiques['résultats'].moyenne_globale)
   afficher(`Moyenne: ${moyenneFormatee} s.`)
   afficher(`Opérations à revoir:`)
+  tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees(table)
   while (operation = tables.operationSuivante()) {
     afficherOperationComplete(operation)
   }
 
   ligneVide()
-  
-  if (tempsABattre && statistiques['résultats'].moyenne_globale * 1 < tempsABattre * 1) {
-    chalkAnimation.default.rainbow('RECORD BATTU!!')
-    chalkAnimation.default.rainbow(`${moyenneFormatee} < ${tempsABattre} !!`)
-  } else {
-    afficher(`Meilleure chance la prochaine fois...`)
-    afficher("Le record n'a pas été battu")
-    afficher(`${moyenneFormatee} >= ${tempsABattre} :-(`)
+
+  let after = () => true
+
+  if (tempsABattre) {
+    if (statistiques['résultats'].moyenne_globale < tempsABattre) {
+      after = () => {
+        chalkAnimation.default.rainbow('RECORD BATTU!!')
+        chalkAnimation.default.rainbow(`${moyenneFormatee} < ${tempsABattre} !!`)
+      }
+    } else {
+      after = () => {
+        afficher(`Meilleure chance la prochaine fois...`)
+        afficher("Le record n'a pas été battu")
+        afficher(`${moyenneFormatee} >= ${tempsABattre} :-(`)
+      }
+    }
   }
 
   ligneVide(2)
 
-  envoyerDonnees(statistiques)
+  envoyerDonnees(statistiques, after)
 
 })()

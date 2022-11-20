@@ -5,8 +5,8 @@ const { afficher } = require('./affichage.js')
 const url = process.env['URL']
 
 module.exports = {
-  envoyerDonnees(data) {
-    axios.post(url, data)
+  envoyerDonnees(data, after = () => null) {
+   axios.post(url, data)
       .then(function(response) {
         if (response.data.status === 'ok') {
           afficher(response.data.message, 'vert')
@@ -14,11 +14,13 @@ module.exports = {
           afficher("ERREUR: Les données n'ont pu être enregistrées dans le chiffrier", 'rouge')
           afficher(`Message d'erreur: ${response.data.message}`, 'rouge')
         }
+        after()
       })
       .catch(function(error) {
         afficher("ERREUR: Les données n'ont pu être enregistrées dans le chiffrier", 'rouge')
         afficher(`Message d'erreur: ${error}`, 'rouge')
-      });
+        after()
+      })
   },
   async demanderStatistiques(nom, table) {
     const resp = await axios.get(url, { params: { nom: nom, table: table } })
