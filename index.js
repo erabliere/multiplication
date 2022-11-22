@@ -15,7 +15,7 @@ async function afficherMode(mode) {
   ligneVide()
 }
 
-(async function () {
+(async function() {
 
   const chalkAnimation = await import('chalk-animation');
 
@@ -42,7 +42,7 @@ async function afficherMode(mode) {
   } catch (e) { }
 
   if (tempsABattre) {
-    afficher(`Temps à battre pour la table de [${couleurs.magenta(table === 0 ? 'toutes les tables' : table)}]: ${couleurs.bleu(tempsABattre)} secondes (mode HASARD)`)
+    afficher(`Temps à battre pour la table de [${couleurs.magenta(table === 0 ? 'toutes les tables' : table)}]: ${couleurs.bleu(formatter(tempsABattre))} secondes (mode HASARD)`)
   }
 
 
@@ -156,7 +156,7 @@ async function afficherMode(mode) {
     if (statistiques['résultats'].moyenne_globale < tempsABattre) {
       after = () => {
         ligneVide(2)
-        chalkAnimation.default.rainbow(`RECORD BATTU!!  -->>  ${moyenneFormatee} < ${tempsABattre} !!`)
+        chalkAnimation.default.rainbow(`RECORD BATTU!!  -->>  ${moyenneFormatee} < ${formatter(tempsABattre)} !!`)
         return true
       }
     } else {
@@ -164,7 +164,7 @@ async function afficherMode(mode) {
         ligneVide(2)
         afficher(`Meilleure chance la prochaine fois...`)
         afficher("Le record n'a pas été battu")
-        afficher(`${moyenneFormatee} >= ${tempsABattre} :-(`)
+        afficher(`${moyenneFormatee} >= ${formatter(tempsABattre)} :-(`)
         return true
       }
     }
