@@ -2,7 +2,6 @@ const prompt = require('prompt-sync')()
 const couleurs = require('./couleurs.js')
 
 function _aUnCodeDeCouleur(texte) {
-  //return texte.search(/033\[0;[0-9]{2}m/gm) > -1
   return texte.search(/\[0;[0-9]{2}m/gm) > -1
 }
 

@@ -64,14 +64,14 @@ async function afficherMode(mode) {
     repetition = 1
     epreuve(tables, Operation.MODES.HASARD, repetition, condition)
 
-    //Quinze répétitions, mode ordonné
+    //Quatre répétitions, mode ordonné
     //Opérations sélectionnées: toutes celles dont la moyenne est supérieure
     //à la moyenne générale pour la table
     await afficherMode('reprise')
     tables.selectionnerOperationsSuperieuresALaMoyenneOuErronees(table)
     tables.modeOrdonne()
     const nombreOperationsSelectionnes = tables.nombreOperationsSelectionnes()
-    repetition = 15
+    repetition = 4
     condition = compteurSelection => compteurSelection < nombreOperationsSelectionnes
     epreuve(tables, Operation.MODES.ORDONNE, repetition, condition)
 
@@ -128,11 +128,8 @@ async function afficherMode(mode) {
   }
 
   statistiques['résultats'] = tables.resumeStatistique()
+  statistiques['brut'] = tables.statistiquesBrutes()
 
-  /*   console.log(statistiques)
-    console.log(' ')
-    statistiques['brut'] = tables.statistiquesBrutes()
-    console.log(JSON.stringify(statistiques.brut, null, 2)) */
   ligneVide()
   trait(38, '+')
   afficher('STATISTIQUES', 'magenta', 38)
